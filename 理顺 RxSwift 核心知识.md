@@ -1,4 +1,4 @@
-#理顺 RxSwift 核心知识
+H1理顺 RxSwift 核心知识
 ###首先，让我们忘掉什么 Observable, Observer, 直接回归问题的本质。
 
 基本需求: viewModel 里的一个网络请求，服务端下发一组数据，viewController 里收到正确数据，刷新UI。
