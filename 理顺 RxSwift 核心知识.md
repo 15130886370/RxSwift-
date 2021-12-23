@@ -1,5 +1,5 @@
-H1理顺 RxSwift 核心知识
-###首先，让我们忘掉什么 Observable, Observer, 直接回归问题的本质。
+# 理顺 RxSwift 核心知识
+### 首先，让我们忘掉什么 Observable, Observer, 直接回归问题的本质。
 
 基本需求: viewModel 里的一个网络请求，服务端下发一组数据，viewController 里收到正确数据，刷新UI。
 
@@ -47,7 +47,7 @@ viewModel.dataHandler2 = { data in
 这样太丑了，这些笨重的 handler 做的事差不多是一样的，为什么不把他们放到一个数组统一处理?另外，viewModel 只是负责提供请求数据的，他根本不需要知道究竟有多少个 handler，每一个 handler 具体做了什么。
 所以，我们应该自己封装一个 handler 的管理类，这个类里面存放了一组 handler，并且每一次网络请求成功回调后，执行所有的 handler。
 
-###一个最简单的事件序列，大概就是这样的:
+### 一个最简单的事件序列，大概就是这样的:
 ```swift
 // 传入的事件类型，先暂时忽略 error, completed 等类型
 // 这里只关注 next 事件
@@ -128,12 +128,12 @@ let testDisposable = testObservable.subscribe(onNext: { value in
 testDisposable.disposed(by: bag)
 ```
 
-####首先我们思考三个问题：
+#### 首先我们思考三个问题：
 1. creat 闭包内容是何时被调用的？
 2. subscribe 方法的 onNext事件是何时被调用的？
 3. Dsiposable 是何时清除不再需要的资源的？
 
-####第一个问题: creat 闭包内容是何时被调用的？
+#### 第一个问题: creat 闭包内容是何时被调用的？
 首先看一下 creat 函数
 ```swift
 extension ObservableType {
@@ -298,7 +298,7 @@ let testObservable = Observable<String>.create {
 }
 ```
 可以看到，此时此刻，observer 的 onNext 方法被执行了，这个observer就是刚刚那个 AnyObserver（self）。至此，我们解决了第一个问题: "***creat 闭包内容是何时被调用的？***"
-####第二个问题：subscribe 方法的 onNext事件是何时被调用的？
+#### 第二个问题：subscribe 方法的 onNext事件是何时被调用的？
 接下来，我们应该着眼于 AnyObserver 的初始化方法
 
 ```swift
@@ -480,7 +480,7 @@ public func subscribe(
 第一: 每增加一个Observer，Observable的creat方法的闭包就会被调用一次，联想到 share 操作符，共享事件结果。（造成的负面影响，如果有多个订阅，附加操作会被调用多次）
 第二:如果没有Observer来订阅 Observable，creat 方法的闭包是不会被执行的。
 
-####第三个问题: Dsiposable 是何时清除不再需要的资源的？
+#### 第三个问题: Dsiposable 是何时清除不再需要的资源的？
 * 一般的，序列如果发出了 error 或者 completed 事件，所有内部资源都会被释放，不需要我们手动释放(这个在前面 ObservableType+Extensions.swift 的subscribe 方法里面多次提到了)
 * 如果我们需要提前释放这些资源或取消订阅的话，那我们可以对返回的 Disposable 调用 dipose 方法
 * 官方推荐使用 DisposeBag,来管理订阅的生命周期，一般是把资源加入到一个全局的 DisposeBag 里面，它跟随着页面的生命周期，当页面销毁时 DisposeBag 也会随之销毁，同时 DisposeBag 里面的资源也会被一一释放。
@@ -557,10 +557,10 @@ public final class DisposeBag: DisposeBase {
 4. DisposeBag 对象的 dispose 方法做了两件事，第一，清空 disposables 数组。 第二，遍历 disposables 数组，对每一个元素执行他自己的 dispose 方法。
 -------
 
-####RxSwift 实用篇
+#### RxSwift 实用篇
 接下来聊一聊适应项目中不同场景的特殊的 Observable,以及那些特征序列
-###PublishSubject
-正如本次分享开头提到的 TestSubject ，他既可以作为事件序列被 Observer 监听，又可以作为 Observer 发出 on 方法产生事件序列。PublishSubject 将对观察者发送订阅后产生的元素，而在订阅前发出的元素将不会发送给观察者。![WeChatbded3e75658b1dc2f4accd908a1b66b9](media/16116541638266/WeChatbded3e75658b1dc2f4accd908a1b66b9.png)
+### PublishSubject
+正如本次分享开头提到的 TestSubject ，他既可以作为事件序列被 Observer 监听，又可以作为 Observer 发出 on 方法产生事件序列。PublishSubject 将对观察者发送订阅后产生的元素，而在订阅前发出的元素将不会发送给观察者。
 
 ```swift
 let disposeBag = DisposeBag()
@@ -578,7 +578,7 @@ subject.subscribe { print("Subscription: 2 Event:", $0) }
 subject.onNext("􏰈") 
 subject.onNext("􏰑")
 ```
-####输出结果
+#### 输出结果
 ```swift
 Subscription: 1 Event: next(􏰀 ) 
 Subscription: 1 Event: next(􏰁 ) 
@@ -589,7 +589,7 @@ Subscription: 2 Event: next(􏰑)
 ```
 ### BehaviorSubject
 BehaviorSubject 的实现方式和 PublishSubject 其实基本上是一样的，唯一的区别就是当观察者对 BehaviorSubject 进行订阅时，它会将源 Observable 中最新的元素发送出来(如果不 存在最新的元素，就发出默认元素)。然后将随后产生的元素发送出来。
-![WeChat9ae7e14e4242b4d789afa7e66290337e](media/16116541638266/WeChat9ae7e14e4242b4d789afa7e66290337e.png)
+
 BehaviorSubject 的实现细节很有意思，他持有了一个属性 element，并且每次接收到 next 信号，就把新的元素赋值给他。所以每次我们接收到的回放都是这个 element 值。具体 BehaviorSubject 是如何做到回放的呢?非常简单，就是在他每次收到订阅（subscribe）的时候，主动调一次
 ```
 observer.on(.next(self.element)) // 相当于把上次的 element 又发射了一次
@@ -597,7 +597,7 @@ observer.on(.next(self.element)) // 相当于把上次的 element 又发射了�
 
 
 ### RxRelay
-####PublishRelay
+#### PublishRelay
 他就是 PublishSubject 去掉了 completed 和 error 事件，同样的，既是可监听序列，也是观察者。
 ```swift
 public final class PublishRelay<Element>: ObservableType {
@@ -640,7 +640,7 @@ case .failure(let error):
 ```
 一个最直白的应用场景，就是执行 HTTP 请求，返回一个 Result 结果。
 
-###Completable
+### Completable
 Completable 要么只能产生一个 completed 事件，要么产生一个 error 事件。
 Completable 适用于那种你只关心任务是否完成，而不需要在意任务返回值的情况。它和 Observable<Void> 有点相似。
 仔细想一想，Completable 其实在很多场景下都很有用，比如某一个定时器，如果超过了多长时间，就不再执行回调。此时使用 Completable 一方面语义更加清晰，另一方面在事件发出后，Completable 所引用的资源就已经被全部销毁了。下面是我们最新需求的一个例子,可以感受一下 Completable的威力:
@@ -701,16 +701,15 @@ completable.subscribe(onCompleted: {
     print("您已在原地停留15秒~")
 }).disposed(by: bag)
 ```
-###Maybe
+### Maybe
 Maybe 介于 Single 和 Completable 之间，它要么只能发出一个
 元素，要么产生一个 completed 事件，要么产生一个 error 事件。
 
 **适用场景: 如果遇到那种可能需要发出一个元素，又可能不需要发出时，就可以使用 Maybe。**
 这个我就想不到具体使用场景了~
-![images](media/16116541638266/images.jpeg)
 
 
-###Driver
+### Driver
 Driver 主要是为了简化 UI 层的代码。不过如果我们遇到的序列具有以下特征，也可以使用它
 * 不会产生 error 事件
 * 一定在 MainScheduler 监听(主线程监听)
@@ -724,12 +723,3 @@ driver 可以在日常开发中为我们避免很多麻烦，比如
 -------
 
 RxSwift 涉及到的东西太多太多了，时间太短，本次就到这里吧👋~
-
-
-
-**还有两大块儿待探索，未完待续...**
-
-**Scheduler**     
-**Operator(操作符)**
-
-**下次一定~~😄**
